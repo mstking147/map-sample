@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 import "ol/ol.css";
 import OSM from "ol/source/OSM";
@@ -38,8 +38,18 @@ import { fromLonLat, toLonLat } from "ol/proj";
 import { Circle as CircleStyle, Fill, Stroke } from "ol/style";
 import { Draw, Modify, Snap } from "ol/interaction";
 
-const OpenLayer = ({ zoom, center }) => {
-  const [map, setMap] = useState(null);
+import {
+  MapUpdateCenter,
+  MapUpdateZoom,
+} from "./../../stateManagement/actions/ActionType";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+
+const OpenLayer = () => {
+  const dispatch = useDispatch();
+  const mapState = useSelector((state) => state.mapState);
+  const map = useRef(null);
+
   const raster = new TileLayer({
     source: new OSM(),
   });
@@ -48,7 +58,7 @@ const OpenLayer = ({ zoom, center }) => {
 
   // on component mount
   useEffect(() => {
-    console.log("افکت اولی");
+    if (map.current) return; // initialize map only once
     const vector = new VectorLayer({
       source: source,
       style: new Style({
@@ -67,58 +77,72 @@ const OpenLayer = ({ zoom, center }) => {
         }),
       }),
     });
-    let mapObject = new Map({
+    map.current = new Map({
       target: "map",
       layers: [raster, vector],
       // Add in the following map controls
-      controls: DefaultControls().extend([new Rotate()]),
+      controls: DefaultControls(),
       view: new View({
-        center: fromLonLat(center),
-        zoom: zoom,
+        center: fromLonLat([mapState.center.lng, mapState.center.lat]),
+        zoom: mapState.zoom,
         enableRotation: true,
-        maxZoom: 17,
       }),
     });
-    setMap(mapObject);
 
-    // extent = ol.proj.transformExtent(extent, "EPSG:3857", "EPSG:4326");
-  }, []);
+    // map.current.getView().on("change:rotation", (e) => {
+    //   console.log("change:rotation", e);
+    // });
+
+    map.current.on("moveend", () => {
+      const mapView = map.current.getView();
+      const center = toLonLat(mapView.getCenter());
+      dispatch({
+        type: MapUpdateCenter,
+        payload: {
+          lng: center[0],
+          lat: center[1],
+        },
+      });
+      dispatch({
+        type: MapUpdateZoom,
+        payload: mapView.getZoom(),
+      });
+    });
+  });
 
   // zoom change handler
   useEffect(() => {
-    if (!map) return;
-    map.getView().setZoom(zoom);
-  }, [zoom]);
+    const mapView = map.current.getView();
+    if (mapView.getZoom() === mapState.zoom) {
+      return;
+    }
+    mapView.setZoom(mapState.zoom);
+  }, [mapState.zoom]);
 
   // center change handler
   useEffect(() => {
-    if (!map) return;
-    map.getView().setCenter(center);
-  }, [center]);
+    const mapView = map.current.getView();
+    const currentCenter = toLonLat(mapView.getCenter());
+    const newCenter = fromLonLat([mapState.center.lng, mapState.center.lat]);
+    if (JSON.stringify(currentCenter) === JSON.stringify(newCenter)) {
+      return;
+    }
+    map.current.getView().setCenter(newCenter);
+  }, [JSON.stringify(mapState.center)]);
 
   let draw, snap; // global so we can remove them later
   function addInteractions() {
-    console.log("addInteractions");
+    // console.log("addInteractions");
     draw = new Draw({
       source: source,
       type: "LineString",
     });
     draw.on("change", function (e) {
-      console.log("draw change : ", e);
+      // console.log("draw change : ", e);
     });
     map.addInteraction(draw);
     // snap = new Snap({ source: source });
     // map.addInteraction(snap);
-  }
-
-  // moveend listiner on map
-  if (map) {
-    map.on("moveend", function (e) {
-      console.log("e : ", e);
-      console.log("center : ", toLonLat(e.frameState.viewState.center));
-      console.log("zoom : ", e.frameState.viewState.zoom);
-      console.log("rotation : ", e.frameState.viewState.rotation);
-    });
   }
 
   return (
