@@ -6,6 +6,7 @@ import mapboxgl, { setRTLTextPlugin } from "!mapbox-gl";
 import {
   MapUpdateZoom,
   MapUpdateCenter,
+  MapUpdateRotate,
 } from "./../../stateManagement/actions/ActionType";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
@@ -31,6 +32,9 @@ const Mapbox = () => {
       center: mapState.center,
       zoom: mapState.zoom - 1,
       boxZoom: false,
+      maxPitch: 0,
+      // dragRotate: false,
+      // touchZoomRotate: false,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl());
@@ -45,6 +49,10 @@ const Mapbox = () => {
         type: MapUpdateZoom,
         payload: map.current.getZoom() + 1,
       });
+      dispatch({
+        type: MapUpdateRotate,
+        payload: -map.current.getBearing(),
+      });
     });
   });
 
@@ -53,7 +61,8 @@ const Mapbox = () => {
     if (map.current.getZoom() + 1 === mapState.zoom) {
       return;
     }
-    map.current.jumpTo({ zoom: mapState.zoom - 1 });
+    // map.current.rotateTo(45.0);
+    map.current.jumpTo({ zoom: mapState.zoom - 1, bearing: 45.0 });
   }, [mapState.zoom]);
 
   // center change handler
@@ -66,6 +75,14 @@ const Mapbox = () => {
     }
     map.current.jumpTo({ center: [mapState.center.lng, mapState.center.lat] });
   }, [JSON.stringify(mapState.center)]);
+
+  // rotate change handler
+  useEffect(() => {
+    if (map.current.getBearing() === -mapState.rotate) {
+      return;
+    }
+    map.current.setBearing(-mapState.rotate);
+  }, [mapState.rotate]);
 
   return (
     <div className="col">

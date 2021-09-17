@@ -2,6 +2,7 @@ import {
   MapGetAllData,
   MapGetByName,
   MapUpdateCenter,
+  MapUpdateRotate,
   MapUpdateZoom,
 } from "./ActionType";
 
@@ -21,5 +22,10 @@ export const updateZoom = (value) => ({
 
 export const updateCenter = (value) => ({
   type: MapUpdateCenter,
+  payload: value,
+});
+
+export const updateRotate = (value) => ({
+  type: MapUpdateRotate,
   payload: value,
 });

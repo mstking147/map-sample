@@ -40,10 +40,16 @@ import { Draw, Modify, Snap } from "ol/interaction";
 
 import {
   MapUpdateCenter,
+  MapUpdateRotate,
   MapUpdateZoom,
 } from "./../../stateManagement/actions/ActionType";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
+
+import {
+  radianToDegree,
+  degreeToRadian,
+} from "./../../shared/functions/covert.functions";
 
 const OpenLayer = () => {
   const dispatch = useDispatch();
@@ -89,10 +95,6 @@ const OpenLayer = () => {
       }),
     });
 
-    // map.current.getView().on("change:rotation", (e) => {
-    //   console.log("change:rotation", e);
-    // });
-
     map.current.on("moveend", () => {
       const mapView = map.current.getView();
       const center = toLonLat(mapView.getCenter());
@@ -106,6 +108,10 @@ const OpenLayer = () => {
       dispatch({
         type: MapUpdateZoom,
         payload: mapView.getZoom(),
+      });
+      dispatch({
+        type: MapUpdateRotate,
+        payload: radianToDegree(mapView.getRotation()),
       });
     });
   });
@@ -129,6 +135,16 @@ const OpenLayer = () => {
     }
     map.current.getView().setCenter(newCenter);
   }, [JSON.stringify(mapState.center)]);
+
+  // rotate change handler
+  useEffect(() => {
+    const mapView = map.current.getView();
+    const rotateTemp = radianToDegree(mapView.getRotation());
+    if (rotateTemp === mapState.rotate) {
+      return;
+    }
+    mapView.setRotation(degreeToRadian(mapState.rotate));
+  }, [mapState.rotate]);
 
   let draw, snap; // global so we can remove them later
   function addInteractions() {

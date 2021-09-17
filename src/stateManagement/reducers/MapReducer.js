@@ -2,14 +2,14 @@ import {
   MapGetAllData,
   MapGetByName,
   MapUpdateZoom,
-  MapUpdateLat,
-  MapUpdateLng,
   MapUpdateCenter,
+  MapUpdateRotate,
 } from "./../actions/ActionType";
 
 const initialState = {
   zoom: 4,
   center: { lng: 55.034, lat: 32.787 },
+  rotate: 0,
 };
 
 function mapReducer(state = initialState, action) {
@@ -29,6 +29,10 @@ function mapReducer(state = initialState, action) {
         return state;
       console.log(action.type + " in REDUX*** : ", action);
       return { ...state, center: action.payload };
+    case MapUpdateRotate:
+      if (state.rotate === action.payload) return state;
+      console.log(action.type + " in REDUX*** : ", action);
+      return { ...state, rotate: action.payload };
     default:
       return state;
   }
