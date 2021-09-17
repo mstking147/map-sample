@@ -1,42 +1,15 @@
 import React, { useEffect, useRef } from "react";
 
 import "ol/ol.css";
+import "./Openlayers.scss";
 import OSM from "ol/source/OSM";
-
-import * as ol from "ol";
 import { Map, View } from "ol";
-import { GeoJSON, XYZ } from "ol/format";
+import { GeoJSON } from "ol/format";
 import { Tile as TileLayer, Vector as VectorLayer } from "ol/layer";
-import {
-  Vector as VectorSource,
-  OSM as OSMSource,
-  XYZ as XYZSource,
-  TileWMS as TileWMSSource,
-} from "ol/source";
-import {
-  Select as SelectInteraction,
-  defaults as DefaultInteractions,
-} from "ol/interaction";
-import {
-  Attribution,
-  ScaleLine,
-  ZoomSlider,
-  Zoom,
-  Rotate,
-  MousePosition,
-  OverviewMap,
-  defaults as DefaultControls,
-} from "ol/control";
-import {
-  Style,
-  Fill as FillStyle,
-  RegularShape as RegularShapeStyle,
-  Stroke as StrokeStyle,
-} from "ol/style";
-import { Projection, get as getProjection } from "ol/proj";
+import { Vector as VectorSource } from "ol/source";
+import { defaults as DefaultControls } from "ol/control";
 import { fromLonLat, toLonLat } from "ol/proj";
-import { Circle as CircleStyle, Fill, Stroke } from "ol/style";
-import { Draw, Modify, Snap } from "ol/interaction";
+import { Draw } from "ol/interaction";
 
 import {
   MapUpdateCenter,
@@ -50,44 +23,60 @@ import {
   radianToDegree,
   degreeToRadian,
 } from "./../../shared/functions/covert.functions";
+import CustomControl from "./CustomControl";
 
 const OpenLayer = () => {
   const dispatch = useDispatch();
   const mapState = useSelector((state) => state.mapState);
   const map = useRef(null);
-
   const raster = new TileLayer({
     source: new OSM(),
   });
 
-  const source = new VectorSource();
+  const vectorSource = new VectorSource();
+  const vectorLayer = new VectorLayer({
+    name: "draw-in-openlayers",
+    source: vectorSource,
+  });
+  let draw = new Draw({
+    source: vectorSource,
+    type: "LineString",
+  });
+
+  function addInteractions() {
+    // draw = new Draw({
+    //   source: vectorSource,
+    //   type: "LineString",
+    // });
+    map.current.addInteraction(draw);
+    // draw.on("drawend", function (e) {
+    //   console.log("draw change : ", e);
+    // });
+  }
 
   // on component mount
   useEffect(() => {
     if (map.current) return; // initialize map only once
-    const vector = new VectorLayer({
-      source: source,
-      style: new Style({
-        fill: new Fill({
-          color: "rgba(255, 255, 255, 0.2)",
-        }),
-        stroke: new Stroke({
-          color: "#ffcc33",
-          width: 2,
-        }),
-        image: new CircleStyle({
-          radius: 7,
-          fill: new Fill({
-            color: "#ffcc33",
-          }),
-        }),
-      }),
-    });
     map.current = new Map({
       target: "map",
-      layers: [raster, vector],
-      // Add in the following map controls
-      controls: DefaultControls(),
+      layers: [raster, vectorLayer],
+      // layers: [raster],
+      controls: DefaultControls().extend([
+        new CustomControl(
+          {
+            className: "draw-line",
+            backgroundImage: "url('assets/images/line.svg')",
+          },
+          addInteractions
+        ),
+        new CustomControl(
+          {
+            className: "remove-line",
+            backgroundImage: "url('assets/images/trash.svg')",
+          },
+          addInteractions
+        ),
+      ]),
       view: new View({
         center: fromLonLat([mapState.center.lng, mapState.center.lat]),
         zoom: mapState.zoom,
@@ -113,6 +102,14 @@ const OpenLayer = () => {
         type: MapUpdateRotate,
         payload: radianToDegree(mapView.getRotation()),
       });
+    });
+
+    draw.on("drawend", function () {
+      // console.log("draw change : ", map.current.getLayers().getArray());
+      // console.log(
+      //   "draw change : ",
+      //   map.current.getLayers().getArray()[1].getSource().getFeatures()
+      // );
     });
   });
 
@@ -146,20 +143,27 @@ const OpenLayer = () => {
     mapView.setRotation(degreeToRadian(mapState.rotate));
   }, [mapState.rotate]);
 
-  let draw, snap; // global so we can remove them later
-  function addInteractions() {
-    // console.log("addInteractions");
-    draw = new Draw({
-      source: source,
-      type: "LineString",
+  // draw change handler
+  useEffect(() => {
+    map.current.getLayers().forEach((layer) => {
+      if (layer && layer.get("name") === "draw-in-mapbox") {
+        map.current.removeLayer(layer);
+      }
     });
-    draw.on("change", function (e) {
-      // console.log("draw change : ", e);
+    const vectorSource = new VectorSource({
+      features: new GeoJSON().readFeatures(mapState.featureCollection, {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      }),
     });
-    map.addInteraction(draw);
-    // snap = new Snap({ source: source });
-    // map.addInteraction(snap);
-  }
+
+    const vectorLayer = new VectorLayer({
+      name: "draw-in-mapbox",
+      source: vectorSource,
+    });
+
+    map.current.addLayer(vectorLayer);
+  }, [mapState.featureCollection]);
 
   return (
     <div className="col">

@@ -1,19 +1,9 @@
 import {
-  MapGetAllData,
-  MapGetByName,
   MapUpdateCenter,
+  MapUpdateFeatureCollection,
   MapUpdateRotate,
   MapUpdateZoom,
 } from "./ActionType";
-
-export const getAll = () => ({
-  type: MapGetAllData,
-});
-
-export const getByName = (name) => ({
-  type: MapGetByName,
-  payload: name,
-});
 
 export const updateZoom = (value) => ({
   type: MapUpdateZoom,
@@ -27,5 +17,10 @@ export const updateCenter = (value) => ({
 
 export const updateRotate = (value) => ({
   type: MapUpdateRotate,
+  payload: value,
+});
+
+export const updateFeatureCollection = (value) => ({
+  type: MapUpdateFeatureCollection,
   payload: value,
 });

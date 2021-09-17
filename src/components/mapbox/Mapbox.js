@@ -1,12 +1,15 @@
 import React, { useEffect, useRef } from "react";
-import "mapbox-gl/dist/mapbox-gl.css";
 import "./Mapbox.scss";
 import mapboxgl, { setRTLTextPlugin } from "!mapbox-gl";
+import MapboxDraw from "@mapbox/mapbox-gl-draw";
+import "mapbox-gl/dist/mapbox-gl.css";
+import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
 import {
   MapUpdateZoom,
   MapUpdateCenter,
   MapUpdateRotate,
+  MapUpdateFeatureCollection,
 } from "./../../stateManagement/actions/ActionType";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
@@ -23,6 +26,15 @@ const Mapbox = () => {
   const mapState = useSelector((state) => state.mapState);
   const mapContainer = useRef(null);
   const map = useRef(null);
+  const draw = new MapboxDraw({
+    boxSelect: false,
+    controls: {
+      polygon: false,
+      combine_features: false,
+      uncombine_features: false,
+      point: false,
+    },
+  });
 
   useEffect(() => {
     if (map.current) return; // initialize map only once
@@ -38,6 +50,7 @@ const Mapbox = () => {
     });
 
     map.current.addControl(new mapboxgl.NavigationControl());
+    map.current.addControl(draw);
 
     map.current.on("moveend", (e) => {
       if (!e.originalEvent) return;
@@ -54,6 +67,17 @@ const Mapbox = () => {
         payload: -map.current.getBearing(),
       });
     });
+
+    map.current.on("draw.create", dispatchDraw);
+    map.current.on(["draw.delete"], dispatchDraw);
+    map.current.on(["draw.update"], dispatchDraw);
+
+    function dispatchDraw() {
+      dispatch({
+        type: MapUpdateFeatureCollection,
+        payload: draw.getAll(),
+      });
+    }
   });
 
   // zoom change handler
@@ -61,8 +85,7 @@ const Mapbox = () => {
     if (map.current.getZoom() + 1 === mapState.zoom) {
       return;
     }
-    // map.current.rotateTo(45.0);
-    map.current.jumpTo({ zoom: mapState.zoom - 1, bearing: 45.0 });
+    map.current.jumpTo({ zoom: mapState.zoom - 1 });
   }, [mapState.zoom]);
 
   // center change handler
