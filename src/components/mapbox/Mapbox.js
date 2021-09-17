@@ -69,8 +69,8 @@ const Mapbox = () => {
     });
 
     map.current.on("draw.create", dispatchDraw);
-    map.current.on(["draw.delete"], dispatchDraw);
-    map.current.on(["draw.update"], dispatchDraw);
+    map.current.on("draw.delete", dispatchDraw);
+    map.current.on("draw.update", dispatchDraw);
 
     function dispatchDraw() {
       dispatch({
