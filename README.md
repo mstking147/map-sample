@@ -12,4 +12,4 @@ Run `npm run build` to build the project. The build artifacts will be stored in 
 
 ## Further help
 
-To get more help on the project read the [documentation]() in documentation folder.
+To get more help on the project read the documentation in docs folder.
