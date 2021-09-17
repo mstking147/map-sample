@@ -1,4 +1,4 @@
-# PanelTemplate
+# MapSample
 
 This project was generated with [Reactjs](https://reactjs.org/) version 17.0.2.
 
