@@ -1,4 +1,5 @@
 import {
+  MapAddFeature,
   MapUpdateCenter,
   MapUpdateFeatureCollection,
   MapUpdateRotate,
@@ -22,5 +23,10 @@ export const updateRotate = (value) => ({
 
 export const updateFeatureCollection = (value) => ({
   type: MapUpdateFeatureCollection,
+  payload: value,
+});
+
+export const addFeature = (value) => ({
+  type: MapAddFeature,
   payload: value,
 });

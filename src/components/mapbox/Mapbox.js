@@ -107,6 +107,17 @@ const Mapbox = () => {
     map.current.setBearing(-mapState.rotate);
   }, [mapState.rotate]);
 
+  // draw change handler
+  useEffect(() => {
+    console.log("hereeee : ", mapState.featureCollection?.features?.length);
+    if (mapState.featureCollection?.features?.length === 0) return;
+    console.log("draw line in openlayers : ", mapState.featureCollection);
+    map.current.addSource("test", {
+      type: "geojson",
+      data: mapState.featureCollection,
+    });
+  }, [mapState.featureCollection]);
+
   return (
     <div className="col">
       <div ref={mapContainer} className="mapbox-container" />

@@ -3,6 +3,7 @@ import {
   MapUpdateCenter,
   MapUpdateRotate,
   MapUpdateFeatureCollection,
+  MapAddFeature,
 } from "./../actions/ActionType";
 
 const initialState = {
@@ -30,6 +31,15 @@ function mapReducer(state = initialState, action) {
 
     case MapUpdateFeatureCollection:
       return { ...state, featureCollection: action.payload };
+
+    case MapAddFeature:
+      return {
+        ...state,
+        featureCollection: {
+          ...state.featureCollection,
+          features: [...state.featureCollection.features, action.payload],
+        },
+      };
     default:
       return state;
   }
