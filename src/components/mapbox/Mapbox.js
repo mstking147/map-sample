@@ -9,10 +9,9 @@ import {
   MapUpdateZoom,
   MapUpdateCenter,
   MapUpdateRotate,
-  MapUpdateFeatureCollection,
+  MapBoxUpdateFeatureCollection,
 } from "./../../stateManagement/actions/ActionType";
-import { useDispatch } from "react-redux";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoibW9zdGFmYWciLCJhIjoiY2p4Mnhqa3RuMGUzaDQ5bnM0bWcwMjR2ZSJ9.E4TKbWMDP962nfX-ai8xNA";
@@ -74,10 +73,27 @@ const Mapbox = () => {
 
     function dispatchDraw() {
       dispatch({
-        type: MapUpdateFeatureCollection,
+        type: MapBoxUpdateFeatureCollection,
         payload: draw.getAll(),
       });
     }
+
+    map.current.on("load", () => {
+      map.current.addSource("draw-in-openlayers", {
+        type: "geojson",
+        data: mapState.featureCollection,
+      });
+
+      map.current.addLayer({
+        id: "line",
+        type: "line",
+        source: "draw-in-openlayers",
+        paint: {
+          "line-color": "#219be3",
+          "line-width": 4,
+        },
+      });
+    });
   });
 
   // zoom change handler
@@ -109,14 +125,13 @@ const Mapbox = () => {
 
   // draw change handler
   useEffect(() => {
-    console.log("hereeee : ", mapState.featureCollection?.features?.length);
-    if (mapState.featureCollection?.features?.length === 0) return;
-    console.log("draw line in openlayers : ", mapState.featureCollection);
-    map.current.addSource("test", {
-      type: "geojson",
-      data: mapState.featureCollection,
-    });
-  }, [mapState.featureCollection]);
+    if (!map.current || !map.current.getSource("draw-in-openlayers")) {
+      return;
+    }
+    map.current
+      .getSource("draw-in-openlayers")
+      .setData(mapState.openlayersFeatureCollection);
+  }, [JSON.stringify(mapState.openlayersFeatureCollection)]);
 
   return (
     <div className="col">

@@ -15,10 +15,11 @@ import { toGeoJSON } from "./../../shared/functions/covert.functions";
 import { createUniqId } from "./../../shared/functions/uniq-id.function";
 
 import {
-  // MapAddFeature,
   MapUpdateCenter,
   MapUpdateRotate,
   MapUpdateZoom,
+  OpenlayersAddFeature,
+  OpenlayersRemoveFeature,
 } from "./../../stateManagement/actions/ActionType";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
@@ -63,17 +64,10 @@ const OpenLayer = () => {
   let snap;
 
   function addInteractions() {
-    // draw = new Draw({
-    //   source: vectorSource,
-    //   type: "LineString",
-    // });
     map.current.addInteraction(modify);
     map.current.addInteraction(draw);
     snap = new Snap({ source: vectorSource });
     map.current.addInteraction(snap);
-    // draw.on("drawend", function (e) {
-    //   console.log("draw change : ", e);
-    // });
   }
 
   // select interaction working on "singleclick"
@@ -82,16 +76,7 @@ const OpenLayer = () => {
     condition: click,
   });
 
-  // function selectInteraction() {
-  //   if (selectSingleClick !== null) {
-  //     map.current.removeInteraction(selectSingleClick);
-  //   }
-
-  //   map.current.addInteraction(selectSingleClick);
-  // }
-
   function removeInteraction() {
-    console.log("remove");
     map.current.removeInteraction(draw);
     map.current.removeInteraction(snap);
   }
@@ -99,9 +84,12 @@ const OpenLayer = () => {
   function removeLine() {
     if (selectedLine) {
       vectorSource.removeFeature(selectedLine);
+      dispatch({
+        type: OpenlayersRemoveFeature,
+        id: selectedLine.id_,
+      });
       selectedLine = null;
     }
-    // vectorSource.clear();
   }
 
   // on component mount
@@ -110,7 +98,6 @@ const OpenLayer = () => {
     map.current = new Map({
       target: "map",
       layers: [raster, vectorLayer],
-      // layers: [raster],
       controls: DefaultControls().extend([
         new CustomControl(
           {
@@ -157,23 +144,25 @@ const OpenLayer = () => {
     draw.on("drawend", function (e) {
       setTimeout(() => {
         removeInteraction();
-      }, 100);
-      // console.log("draw change : ", map.current.getLayers().getArray());
-      // console.log(
-      //   "draw change : ",
-      //   map.current.getLayers().getArray()[1].getSource().getFeatures()
-      // );
-      console.log("draw end : ", e.feature);
+      });
       e.feature.setId(createUniqId());
-      console.log("go to redux : ", toGeoJSON(e.feature));
-      // dispatch({
-      //   type: MapAddFeature,
-      //   payload: toGeoJSON(e.feature),
-      // });
+      dispatch({
+        type: OpenlayersAddFeature,
+        payload: toGeoJSON(e.feature),
+      });
     });
 
-    modify.on("change", function () {
-      console.log("modify change : ", map.current.getLayers().getArray());
+    modify.on("modifyend", function (e) {
+      const temp = toGeoJSON(e.features.getArray()[0]);
+      dispatch({
+        type: OpenlayersRemoveFeature,
+        id: temp.id,
+      });
+
+      dispatch({
+        type: OpenlayersAddFeature,
+        payload: temp,
+      });
     });
 
     // selectInteraction();
@@ -182,32 +171,7 @@ const OpenLayer = () => {
     selectSingleClick.on("select", function (e) {
       let featureSelected = e.selected[0];
       if (featureSelected) {
-        // console.log(
-        //   "featureSelected : ",
-        //   featureSelected.getGeometry().getCoordinates()
-        // );
-        // let layer = selectSingleClick.getLayer(featureSelected);
-        // console.log("layer : ", layer.get("name")); // here you have the selected layer
-        // console.log("Source : ", layer.getSource());
-        // console.log("format : ", layer.getSource().format_);
-
-        // console.log(
-        //   "here test** : ",
-        //   layer.getSource().getFeaturesCollection()
-        // );
-
-        // console.log("GeoJSON: ", new GeoJSON().getType(featureSelected));
-
-        // setSelectedLine(featureSelected);
         selectedLine = featureSelected;
-        // vectorSource.removeFeature(featureSelected);
-
-        // const geoJSON = new GeoJSON().writeFeature(featureSelected, {
-        //   dataProjection: "EPSG:4326",
-        //   featureProjection: "EPSG:3857",
-        // });
-        console.log("geoJSON : ", toGeoJSON(featureSelected));
-        mapState.featureCollection;
       } else {
         selectedLine = null;
       }
@@ -251,10 +215,8 @@ const OpenLayer = () => {
         map.current.removeLayer(layer);
       }
     });
-
-    console.log("draw line in mapbox : ", mapState.featureCollection);
     const vectorSource = new VectorSource({
-      features: new GeoJSON().readFeatures(mapState.featureCollection, {
+      features: new GeoJSON().readFeatures(mapState.mapBoxFeatureCollection, {
         dataProjection: "EPSG:4326",
         featureProjection: "EPSG:3857",
       }),
@@ -266,7 +228,7 @@ const OpenLayer = () => {
     });
 
     map.current.addLayer(vectorLayer);
-  }, [mapState.featureCollection]);
+  }, [mapState.mapBoxFeatureCollection]);
 
   return (
     <div className="col">

@@ -1,9 +1,12 @@
 import {
-  MapAddFeature,
+  // MapAddFeature,
+  MapBoxUpdateFeatureCollection,
   MapUpdateCenter,
-  MapUpdateFeatureCollection,
+  // MapUpdateFeatureCollection,
   MapUpdateRotate,
   MapUpdateZoom,
+  OpenlayersAddFeature,
+  OpenlayersRemoveFeature,
 } from "./ActionType";
 
 export const updateZoom = (value) => ({
@@ -21,12 +24,27 @@ export const updateRotate = (value) => ({
   payload: value,
 });
 
-export const updateFeatureCollection = (value) => ({
-  type: MapUpdateFeatureCollection,
+// export const updateFeatureCollection = (value) => ({
+//   type: MapUpdateFeatureCollection,
+//   payload: value,
+// });
+
+// export const addFeature = (value) => ({
+//   type: MapAddFeature,
+//   payload: value,
+// });
+
+export const openLayersAddFeature = (value) => ({
+  type: OpenlayersAddFeature,
   payload: value,
 });
 
-export const addFeature = (value) => ({
-  type: MapAddFeature,
+export const openLayersRemoveFeature = (id) => ({
+  type: OpenlayersRemoveFeature,
+  id,
+});
+
+export const updateMapBoxFeatureCollection = (value) => ({
+  type: MapBoxUpdateFeatureCollection,
   payload: value,
 });
