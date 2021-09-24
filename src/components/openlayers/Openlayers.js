@@ -165,7 +165,6 @@ const OpenLayer = () => {
       });
     });
 
-    // selectInteraction();
     map.current.addInteraction(selectSingleClick);
 
     selectSingleClick.on("select", function (e) {
